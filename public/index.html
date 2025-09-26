@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototipo de Serena</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- SCRIPT DE STRIPE -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .bg-serena-white { background-color: #F8F7F3; }
+        .text-serena-blue { color: #1C2541; }
+        .bg-serena-mango { background-color: #FFC947; }
+        .border-serena-mango { border-color: #FFC947; }
+        .text-serena-gray { color: #A5A5A5; }
+        .border-serena-gray { border-color: #A5A5A5; }
+        .screen { display: none; }
+        .screen.active { display: flex; }
+        .toolbox { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-in-out; }
+        .option-selected { border-color: #FFC947; background-color: #FFFBEB; border-width: 2px; }
+        .cta-button {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .cta-button:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 20px -5px rgba(255, 201, 71, 0.4);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            right: 20px;
+            background-color: #1C2541;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-serena-white text-serena-blue">
+
+    <!-- Contenedor principal -->
+    <div id="app-container" class="max-w-md mx-auto h-screen flex flex-col">
+
+        <!-- Pantalla 1: Bienvenida -->
+        <div id="screen-welcome" class="screen active flex-col justify-between h-full p-8 text-center bg-cover bg-center" style="background-color: #1C2541; background-image: url('https://images.unsplash.com/photo-1502657877623-f66bf489d236?q=80&w=2069&auto=format&fit=crop');">
+            <div class="pt-12">
+                <h1 class="text-5xl font-semibold text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">Serena</h1>
+                <p class="text-xl mt-2 text-white" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.6);">Tu bienestar es el destino.</p>
+            </div>
+            <div class="pb-12">
+                <button onclick="showScreen('screen-q1')" class="w-full bg-serena-mango text-serena-blue font-semibold py-4 px-6 rounded-full shadow-lg cta-button">Descubrir mi viaje ideal</button>
+            </div>
+        </div>
+
+        <!-- Pantallas del Cuestionario (Q1 a Q6) -->
+        <div id="screen-q1" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 16%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-8">Perfecto. Empecemos a dar forma a ese viaje. Para empezar, cuéntanos: ¿quién te acompaña en esta aventura?</h2>
+            <div class="space-y-4 flex-grow">
+                <button onclick="handleOptionSelect(this, 'q1-options', 'q1_companion', 'solitario', 'next-btn-q1')" class="q1-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Yo y mi brújula interna (viaje en solitario)</button>
+                <button onclick="handleOptionSelect(this, 'q1-options', 'q1_companion', 'pareja', 'next-btn-q1')" class="q1-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Una escapada para dos (con mi pareja)</button>
+                <button onclick="handleOptionSelect(this, 'q1-options', 'q1_companion', 'familia', 'next-btn-q1')" class="q1-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Creando recuerdos inolvidables (con mi familia)</button>
+                <button onclick="handleOptionSelect(this, 'q1-options', 'q1_companion', 'amigos', 'next-btn-q1')" class="q1-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Risas y exploración (con amigos)</button>
+            </div>
+            <div class="text-right"><button id="next-btn-q1" onclick="showScreen('screen-q2')" class="font-semibold text-lg text-serena-gray cursor-not-allowed" disabled>Siguiente &gt;</button></div>
+        </div>
+        <div id="screen-q2" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 33%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-12">¡Genial! Ya tenemos el 'quién'. Siguiente paso: el 'cómo'. Tu energía para este viaje es más bien...</h2>
+            <div class="flex-grow flex flex-col justify-center items-center px-4">
+                 <input oninput="saveAnswer('q2_energy', this.value); enableNextButton('next-btn-q2')" type="range" min="0" max="100" value="50" class="w-full h-2 bg-serena-gray rounded-lg appearance-none cursor-pointer" style="accent-color: #FFC947;">
+                 <div class="w-full flex justify-between text-sm text-serena-gray mt-2">
+                    <span>Resetear</span><span>Equilibrio</span><span>¡A tope!</span>
+                 </div>
+            </div>
+            <div class="text-right"><button id="next-btn-q2" onclick="showScreen('screen-q3')" class="font-semibold text-lg">Siguiente &gt;</button></div>
+        </div>
+        <div id="screen-q3" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 50%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-8">¡Captado! Vamos al meollo del asunto para que esto sea memorable. ¿Qué te pide el cuerpo en esta escapada?</h2>
+            <div class="space-y-4 flex-grow">
+                <button onclick="handleOptionSelect(this, 'q3-options', 'q3_longing', 'calm', 'next-btn-q3')" class="q3-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Paz y Calma</button>
+                <button onclick="handleOptionSelect(this, 'q3-options', 'q3_longing', 'culture', 'next-btn-q3')" class="q3-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Novedad y Cultura</button>
+                <button onclick="handleOptionSelect(this, 'q3-options', 'q3_longing', 'activity', 'next-btn-q3')" class="q3-options w-full text-left p-4 border-2 border-serena-gray rounded-2xl transition-colors">Aventura y Actividad</button>
+            </div>
+            <div class="text-right"><button id="next-btn-q3" onclick="showScreen('screen-q4')" class="font-semibold text-lg text-serena-gray cursor-not-allowed" disabled>Siguiente &gt;</button></div>
+        </div>
+        <div id="screen-q4" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 66%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-8">Vale, última pregunta antes de que mi IA eche humo y flipes con el viaje que te vamos a mostrar en exclusiva para ti. Dinos, ¿qué paisaje te inspira más?</h2>
+            <div class="grid grid-cols-2 gap-4 flex-grow">
+                <button onclick="handleOptionSelect(this, 'q4-options', 'q4_environment', 'coast', 'next-btn-q4')" class="q4-options border-2 border-serena-gray rounded-2xl p-4 flex flex-col items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8s4-4 8 0 8 4 8 4M4 14s4-4 8 0 8 4 8 4" /></svg>
+                    Mar y Costa
+                </button>
+                <button onclick="handleOptionSelect(this, 'q4-options', 'q4_environment', 'mountain', 'next-btn-q4')" class="q4-options border-2 border-serena-gray rounded-2xl p-4 flex flex-col items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M2 18l6-8 4 5 4-3 6 6H2z" /></svg>
+                    Montaña y Naturaleza
+                </button>
+                <button onclick="handleOptionSelect(this, 'q4-options', 'q4_environment', 'city', 'next-btn-q4')" class="q4-options border-2 border-serena-gray rounded-2xl p-4 flex flex-col items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                    Ciudad y Cultura
+                </button>
+                <button onclick="handleOptionSelect(this, 'q4-options', 'q4_environment', 'countryside', 'next-btn-q4')" class="q4-options border-2 border-serena-gray rounded-2xl p-4 flex flex-col items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                    Campo y Pueblos
+                </button>
+            </div>
+            <div class="text-right mt-4"><button id="next-btn-q4" onclick="showScreen('screen-q5')" class="font-semibold text-lg text-serena-gray cursor-not-allowed" disabled>Siguiente &gt;</button></div>
+        </div>
+        <div id="screen-q5" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 83%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-6">Un último detalle para afinar la puntería...</h2>
+            <div class="flex-grow">
+                <h3 class="font-semibold mb-2">¿Alguna preferencia de destino?</h3>
+                <div class="grid grid-cols-3 gap-2 mb-6">
+                    <button onclick="handleFilterSelect(this, 'q5-location-options', 'q5_location', 'spain')" class="q5-location-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">España</button>
+                    <button onclick="handleFilterSelect(this, 'q5-location-options', 'q5_location', 'abroad')" class="q5-location-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Extranjero</button>
+                    <button onclick="handleFilterSelect(this, 'q5-location-options', 'q5_location', 'any')" class="q5-location-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Me da igual</button>
+                </div>
+                <h3 class="font-semibold mb-2">¿Y de presupuesto por persona?</h3>
+                <div class="grid grid-cols-2 gap-2">
+                     <button onclick="handleFilterSelect(this, 'q5-price-options', 'q5_price', 'affordable')" class="q5-price-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Asequible (€)</button>
+                     <button onclick="handleFilterSelect(this, 'q5-price-options', 'q5_price', 'comfortable')" class="q5-price-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Cómodo (€€)</button>
+                     <button onclick="handleFilterSelect(this, 'q5-price-options', 'q5_price', 'luxury')" class="q5-price-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Lujo (€€€)</button>
+                     <button onclick="handleFilterSelect(this, 'q5-price-options', 'q5_price', 'any')" class="q5-price-options text-center p-3 border-2 border-serena-gray rounded-xl transition-colors">Sin límite</button>
+                </div>
+            </div>
+            <div class="text-center">
+                <button id="surprise-btn" onclick="skipFilters()" class="w-full bg-serena-mango text-serena-blue font-semibold py-3 px-6 rounded-full shadow-lg my-4 cta-button">¡Sorpréndeme!</button>
+                <p class="text-xs text-serena-gray">¿No te decides? Cierra los ojos, pulsa aquí y deja que nuestra IA haga su magia.</p>
+            </div>
+            <div class="text-right mt-4"><button id="next-btn-q5" onclick="showScreen('screen-q6')" class="font-semibold text-lg text-serena-gray cursor-not-allowed" disabled>Siguiente &gt;</button></div>
+        </div>
+        <div id="screen-q6" class="screen flex-col h-full p-6">
+            <div class="progress-container w-full bg-gray-200 rounded-full h-1.5 mb-8"><div class="bg-serena-mango h-1.5 rounded-full" style="width: 100%"></div></div>
+            <h2 class="text-2xl font-medium text-center mb-8">El toque final. Dale a nuestra IA el ingrediente secreto para que tu viaje no sea bueno, sino legendario.</h2>
+            <div class="flex-grow">
+                <textarea oninput="saveAnswer('q6_secret', this.value); enableNextButton('next-btn-q6')" class="w-full h-48 p-4 border-2 border-serena-gray rounded-2xl focus:border-serena-mango" placeholder="Dale a nuestra IA el último detalle. Por ejemplo: 'aprender a surfear', 'desconectar del móvil' o 'una cena inolvidable'..."></textarea>
+            </div>
+            <div class="text-right"><button id="next-btn-q6" onclick="startLoading()" class="font-semibold text-lg text-serena-gray cursor-not-allowed" disabled>Finalizar</button></div>
+        </div>
+        
+        <!-- Pantalla de Carga -->
+        <div id="screen-loading" class="screen flex-col h-full p-6 justify-center items-center text-center">
+            <svg class="animate-spin h-16 w-16 text-serena-blue mb-4" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50) scale(0.8)"><circle cx="0" cy="0" r="48" stroke="#1C2541" stroke-width="6" fill="none" /><path d="M-25,0 L0,-42 L25,0 L0,42 Z" fill="#1C2541" /><path d="M-15,0 L0,-32 L15,0 L0,32 Z" fill="#FFC947" /><path d="M-40,15 Q0,50 40,15" stroke="#1C2541" stroke-width="6" fill="none" /><path d="M-45,25 Q0,65 45,25" stroke="#1C2541" stroke-width="6" fill="none" /></g></svg>
+            <p class="text-xl">Consultando a los oráculos del viaje...</p>
+        </div>
+
+        <!-- Pantalla de Resultado (Cata Gratuita) -->
+        <div id="screen-result" class="screen flex-col h-full p-6">
+            <h2 class="text-2xl font-medium text-center mb-4">¡Tachán! Basado en tus respuestas, este es tu próximo destino:</h2>
+            <div id="result-card" class="flex-grow rounded-2xl bg-cover bg-center flex flex-col justify-end p-6 text-white shadow-2xl">
+                <h3 id="result-title" class="text-3xl font-semibold" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);"></h3>
+            </div>
+            <div class="mt-6 text-center">
+                <p class="mb-4">Tu itinerario completo y 2 alternativas te esperan dentro.</p>
+                <button onclick="setAuthMode('signup'); showScreen('screen-auth')" class="w-full bg-serena-mango text-serena-blue font-semibold py-4 px-6 rounded-full shadow-lg cta-button">QUIERO VERLO TODO</button>
+            </div>
+        </div>
+
+        <!-- Pantalla de Autenticación -->
+        <div id="screen-auth" class="screen flex-col h-full p-6 justify-center">
+            <h2 id="auth-title" class="text-3xl font-semibold text-center mb-4">¡Casi lo tienes!</h2>
+            <p id="auth-subtitle" class="text-center mb-8">Crea tu cuenta para guardar este viaje y acceder a tu perfil personalizado.</p>
+            <div class="space-y-4">
+                <input id="auth-email" type="email" placeholder="Tu correo electrónico" class="w-full p-4 border-2 border-serena-gray rounded-2xl">
+                <input id="auth-password" type="password" placeholder="Crea una contraseña" class="w-full p-4 border-2 border-serena-gray rounded-2xl">
+            </div>
+            <div class="mt-8 space-y-4">
+                <button id="auth-main-button" onclick="handleAuthAction()" class="w-full bg-serena-mango text-serena-blue font-semibold py-4 px-6 rounded-full shadow-lg cta-button">Crear mi cuenta y ver mi viaje</button>
+                <p id="auth-secondary-text" class="text-center text-sm">¿Ya tienes cuenta? <button class="font-semibold text-serena-mango" id="auth-switch-to-signin-btn">Inicia sesión</button></p>
+            </div>
+             <p id="auth-error" class="text-red-500 text-center mt-4 font-medium"></p>
+             <button id="forgot-password-button" onclick="handlePasswordReset()" class="hidden text-sm text-serena-gray mt-4 hover:underline">¿Has olvidado tu contraseña?</button>
+        </div>
+        
+        <!-- Pantalla de "Pago" Reenfocada a "Unirse al Club" -->
+        <div id="screen-payment" class="screen flex-col h-full p-6 text-center bg-gray-50">
+             <div class="flex justify-center mb-4"><svg class="h-12 w-12 text-serena-blue" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g transform="translate(50,50) scale(0.8)"><circle cx="0" cy="0" r="48" stroke="#1C2541" stroke-width="6" fill="none" /><path d="M-25,0 L0,-42 L25,0 L0,42 Z" fill="#1C2541" /><path d="M-15,0 L0,-32 L15,0 L0,32 Z" fill="#FFC947" /><path d="M-40,15 Q0,50 40,15" stroke="#1C2541" stroke-width="6" fill="none" /><path d="M-45,25 Q0,65 45,25" stroke="#1C2541" stroke-width="6" fill="none" /></g></svg></div>
+            <h2 class="text-3xl font-semibold mb-2">Estás a un paso de tu paraíso</h2>
+            <p id="payment-subtitle" class="mb-6">Únete al Club Serena y desbloquea todos tus viajes personalizados.</p>
+            <div class="text-left space-y-3 mb-8 bg-white p-6 rounded-2xl shadow">
+                <p>✅ <b>Ahorra 10h de media</b> en planificación.</p>
+                <p>✅ <b>Ahorra más de 200€</b> en comisiones de agencia.</p>
+                <p>✅ Descubre joyas ocultas, no "trampas para turistas".</p>
+                <p>✅ Accede a <b>experiencias exclusivas</b> del Club.</p>
+                <p>✅ <b>Únete a miles de viajeros</b> que ya han encontrado su destino.</p>
+            </div>
+            <div class="space-y-4">
+                <div class="relative">
+                    <button id="annual-plan-btn" class="payment-plan-options w-full p-4 border-2 rounded-2xl transition-all duration-300 option-selected">
+                        <span class="font-semibold">Plan Anual - 49,99€</span><br>
+                        <span class="text-sm">(Solo 4,16€/mes - Ahorra un 30%)</span>
+                    </button>
+                    <div class="popular-badge">MÁS POPULAR</div>
+                </div>
+                <button id="monthly-plan-btn" class="payment-plan-options w-full p-4 border-2 border-serena-gray rounded-2xl transition-all duration-300">
+                    <span class="font-semibold">Plan Mensual - 5,99€</span>
+                </button>
+            </div>
+            <button id="payment-button" class="w-full mt-8 bg-serena-mango text-serena-blue font-semibold py-4 px-6 rounded-full shadow-lg cta-button">Desbloquear mis viajes</button>
+            <p id="payment-error" class="text-red-500 text-center mt-4 font-medium"></p>
+            <p class="text-xs text-serena-gray mt-4">
+                Tu membresía se renueva automáticamente. Te enviaremos un recordatorio 7 días antes. <span class="font-bold">Cancela cuando quieras, sin dramas.</span>
+            </p>
+        </div>
+        
+        <!-- Pantalla de Éxito de "Pago" -->
+        <div id="screen-success" class="screen flex-col h-full p-6 text-center justify-center">
+            <h2 class="text-3xl font-semibold">¡Bienvenido/a al Club Serena!</h2>
+            <p class="mt-4">Tu paraíso personal te está esperando. ¡Vamos a descubrirlo!</p>
+        </div>
+
+        <!-- Pantalla de Paraíso (Contenido Premium) -->
+        <div id="screen-paradise" class="screen flex-col h-full overflow-y-auto bg-gray-50">
+            <button id="account-btn-paradise" class="absolute top-4 right-4 bg-white/80 backdrop-blur-sm rounded-full p-2 z-20 shadow-lg">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-serena-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+            </button>
+            <div class="w-full">
+                 <div id="paradise-reveal" class="h-80 bg-cover bg-center flex flex-col justify-end p-6 text-white relative"><div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div><h1 id="paradise-title" class="text-4xl font-bold z-10" style="text-shadow: 1px 1px 3px rgba(0,0,0,0.8);"></h1></div>
+                <div id="paradise-mirror" class="p-6 bg-serena-white -mt-5 rounded-t-2xl relative shadow-lg"><h2 id="paradise-greeting" class="text-2xl font-semibold"></h2><p id="paradise-contract" class="mt-4 text-gray-600"></p></div>
+                <div class="p-6"><h3 class="text-2xl font-semibold mb-4">El Plan Maestro</h3><div id="paradise-itinerary" class="space-y-6"></div></div>
+                <div class="p-6 bg-gray-100"><h3 class="text-2xl font-semibold mb-4">Explora más</h3><div id="paradise-extras" class="grid grid-cols-2 gap-4"></div></div>
+            </div>
+        </div>
+
+        <!-- Pantalla: MI CUENTA -->
+        <div id="screen-account" class="screen flex-col h-full p-8 bg-gray-50">
+            <div class="w-full">
+                <button id="back-to-paradise-btn" class="mb-6 font-semibold text-serena-blue">&lt; Volver a mis viajes</button>
+                <h2 class="text-3xl font-bold text-serena-blue mb-8">Mi Cuenta del Club</h2>
+                <div class="bg-white p-6 rounded-2xl shadow-md mb-6">
+                    <p class="text-sm text-serena-gray">Email</p>
+                    <p id="account-email" class="text-lg font-medium text-serena-blue"></p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-md">
+                    <h3 class="text-xl font-semibold text-serena-blue mb-4">Tu Membresía</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-serena-gray">Plan</p>
+                            <p id="account-plan" class="text-lg font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-serena-gray">Estado</p>
+                            <p id="account-status" class="text-lg font-medium"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-serena-gray">Próxima renovación</p>
+                            <p id="account-renewal" class="text-lg font-medium"></p>
+                        </div>
+                    </div>
+                    <button id="manage-subscription-btn" class="w-full mt-6 bg-serena-blue text-white font-semibold py-3 px-6 rounded-full shadow-lg cta-button">
+                        Gestionar mi membresía
+                    </button>
+                     <p class="text-xs text-serena-gray mt-3 text-center">Aquí podrás cambiar tu plan, cancelarlo o actualizar tu método de acceso.</p>
+                </div>
+
+                <div class="text-center mt-8">
+                    <button id="logout-btn" class="font-semibold text-serena-gray hover:text-red-500 transition-colors">
+                        Cerrar Sesión
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS CON LÓGICA DE SUSCRIPCIÓN FUNCIONAL -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDNGz61mhJBXNztBA6yFJrQaj29H7jC46U",
+          authDomain: "serena-app-final.firebaseapp.com",
+          projectId: "serena-app-final",
+          storageBucket: "serena-app-final.firebasestorage.app",
+          messagingSenderId: "732860761387",
+          appId: "1:732860761387:web:a8e727d9c1e2198ea8316e"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const userAnswers = {};
+        let authMode = 'signup';
+        
+        const monthlyPriceId = 'price_1S5LupKRu7M7maFS8FnlNC36';
+        const annualPriceId = 'price_1S5LtFKRu7M7maFSTqnqvPh0';
+        
+        let selectedPriceId = annualPriceId; 
+        
+        const stripe = Stripe('pk_live_51PZDnFKRu7M7maFSQxYDOfNswT4YMF0MwQIoExTzWUAVzwDJLITGcS3rPB4W0ayhnt18b7hyG03AHmZGVL1eWzX000JUvhjfiC');
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => { screen.classList.remove('active'); });
+            const screenToShow = document.getElementById(screenId);
+            if(screenToShow) { screenToShow.classList.add('active'); }
+        }
+        function setAuthMode(mode) {
+            authMode = mode;
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+            const mainButton = document.getElementById('auth-main-button');
+            const secondaryText = document.getElementById('auth-secondary-text');
+            const passwordInput = document.getElementById('auth-password');
+            const forgotPasswordBtn = document.getElementById('forgot-password-button');
+            document.getElementById('auth-error').textContent = '';
+
+            if (mode === 'signin') {
+                title.textContent = '¡Bienvenido/a de nuevo!';
+                subtitle.textContent = 'Inicia sesión para acceder a tu paraíso personal.';
+                mainButton.textContent = 'Iniciar sesión';
+                passwordInput.placeholder = 'Introduce tu contraseña';
+                secondaryText.innerHTML = `¿No tienes cuenta? <button class="font-semibold text-serena-mango" id="auth-switch-to-signup-btn">Crea una aquí</button>`;
+                forgotPasswordBtn.classList.remove('hidden');
+            } else {
+                title.textContent = '¡Casi lo tienes!';
+                subtitle.textContent = 'Crea tu cuenta para guardar este viaje y acceder a tu perfil personalizado.';
+                mainButton.textContent = 'Crear mi cuenta y ver mi viaje';
+                passwordInput.placeholder = 'Crea una contraseña';
+                secondaryText.innerHTML = `¿Ya tienes cuenta? <button class="font-semibold text-serena-mango" id="auth-switch-to-signin-btn">Inicia sesión</button>`;
+                forgotPasswordBtn.classList.add('hidden');
+            }
+        }
+        function handleAuthAction() {
+            if (authMode === 'signup') {
+                handleSignUp();
+            } else {
+                handleSignIn();
+            }
+        }
+        async function handlePasswordReset() {
+            const email = document.getElementById('auth-email').value;
+            const errorElement = document.getElementById('auth-error');
+            if (!email) {
+                errorElement.textContent = "Introduce tu email para que podamos ayudarte.";
+                return;
+            }
+            try {
+                await sendPasswordResetEmail(auth, email);
+                errorElement.textContent = "¡Correo enviado! Revisa tu bandeja de entrada (y la de spam, por si acaso).";
+                errorElement.classList.remove('text-red-500');
+                errorElement.classList.add('text-green-500');
+            } catch (error) {
+                 errorElement.textContent = "No hemos podido enviar el correo. ¿Seguro que el email es correcto?";
+                 errorElement.classList.add('text-red-500');
+                 errorElement.classList.remove('text-green-500');
+            }
+        }
+        async function handleSignUp() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorElement = document.getElementById('auth-error');
+            errorElement.textContent = '';
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                await saveAnswersToFirestore(userCredential.user.uid);
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    errorElement.innerHTML = "¡Vaya! Parece que ya eres del club. Prueba a <button id='auth-error-signin-link' class=\"font-bold underline\">iniciar sesión</button>.";
+                } else if (error.code === 'auth/weak-password') {
+                    errorElement.textContent = "La contraseña es más floja que un muelle de guita. ¡Pon una con al menos 6 caracteres!";
+                } else {
+                    errorElement.textContent = "Vaya, nuestro chamán se ha tropezado con un cable. Inténtalo de nuevo.";
+                }
+            }
+        }
+        async function handleSignIn() {
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorElement = document.getElementById('auth-error');
+            errorElement.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    errorElement.textContent = "El email o la contraseña no parecen correctos. ¿Seguro que no era 'patata123'?";
+                } else {
+                    errorElement.textContent = "Algo ha ido mal. Revisa tus datos y vuelve a intentarlo.";
+                }
+            }
+        }
+        function saveAnswer(questionId, answerValue) { userAnswers[questionId] = answerValue; if(questionId.startsWith('q5') && userAnswers.q5_location && userAnswers.q5_price) { enableNextButton('next-btn-q5'); } }
+        function enableNextButton(buttonId) { const button = document.getElementById(buttonId); if (button) { button.disabled = false; button.classList.remove('text-serena-gray', 'cursor-not-allowed'); button.classList.add('text-serena-blue'); } }
+        function disableNextButton(buttonId) { const button = document.getElementById(buttonId); if (button) { button.disabled = true; button.classList.add('text-serena-gray', 'cursor-not-allowed'); button.classList.remove('text-serena-blue'); } }
+        function handleFilterSelect(selectedElement, groupClass, questionId, answerValue) { if (selectedElement.classList.contains('option-selected')) { selectedElement.classList.remove('option-selected'); delete userAnswers[questionId]; } else { handleOptionSelect(selectedElement, groupClass, questionId, answerValue, null); } const surpriseBtn = document.getElementById('surprise-btn'); if (userAnswers.q5_location || userAnswers.q5_price) { surpriseBtn.classList.add('opacity-50', 'cursor-not-allowed'); surpriseBtn.disabled = true; } else { surpriseBtn.classList.remove('opacity-50', 'cursor-not-allowed'); surpriseBtn.disabled = false; } if (userAnswers.q5_location && userAnswers.q5_price) { enableNextButton('next-btn-q5'); } else { disableNextButton('next-btn-q5'); } }
+        function handleOptionSelect(selectedElement, groupClass, questionId, answerValue, nextButtonId) { saveAnswer(questionId, answerValue); document.querySelectorAll(`.${groupClass}`).forEach(opt => opt.classList.remove('option-selected')); selectedElement.classList.add('option-selected'); if(nextButtonId) enableNextButton(nextButtonId); }
+        async function saveAnswersToFirestore(userId) { try { await setDoc(doc(db, "userProfiles", userId), userAnswers, { merge: true }); } catch (e) { console.error("Error al guardar respuestas en Firestore: ", e); } }
+        function startLoading() { showScreen('screen-loading'); setTimeout(() => { showResultPage(); }, 2500); }
+        function showResultPage() { let trip; if (userAnswers.q4_environment === 'mountain') { trip = { title: 'Escapada "Cima y Silencio" en el Valle de Arán', image: `url('https://images.unsplash.com/photo-1542383552-32d0c4815a59?q=80&w=2070&auto=format&fit=crop')` }; } else if (userAnswers.q4_environment === 'countryside') { trip = { title: 'Ruta del Vino y Relax en La Toscana', image: `url('https://images.unsplash.com/photo-1599881143273-033122b2a65d?q=80&w=1973&auto=format&fit=crop')` }; } else if (userAnswers.q4_environment === 'city') { trip = { title: 'Inmersión Cultural en el Corazón de Kioto', image: `url('https://images.unsplash.com/photo-1545569341-9eb8b30979d9?q=80&w=2070&auto=format&fit=crop')` }; } else { trip = { title: 'Retiro "Agua Salada y Mente en Blanco" en Formentera', image: `url('https://images.unsplash.com/photo-1614001211196-160b3a32e2cf?q=80&w=1974&auto=format&fit=crop')` }; } document.getElementById('result-title').innerText = trip.title; document.getElementById('result-card').style.backgroundImage = `linear-gradient(to top, rgba(0,0,0,0.7), transparent), ${trip.image}`; showScreen('screen-result'); }
+        async function buildAndShowParadisePage() { const user = auth.currentUser; if (!user) { showScreen('screen-welcome'); return; } const docRef = doc(db, "userProfiles", user.uid); const docSnap = await getDoc(docRef); if (docSnap.exists()) { const answers = docSnap.data(); const userName = user.email.split('@')[0]; let tripData; if (answers.q4_environment === 'mountain') { tripData = { title: 'Escapada "Cima y Silencio" en Grindelwald, Suiza.', image: `url('https://images.unsplash.com/photo-1565220803930-a094a8b1116c?q=80&w=2070&auto=format&fit=crop')`, greeting: `Atención, ${userName}. Tu cerebro necesitaba esto.`, contract: `Hemos cotilleado tus respuestas y nuestra IA ha dictado sentencia: necesitabas un chute de **Aventura y Actividad** en la **Montaña** para resetearte el alma. Voilà.`, itinerary: [ { day: 1, title: "La Carretera hacia las Nubes", desc: "Tu aventura empieza en Zúrich. Recoge el 4x4 que te espera y prepárate para una ruta en coche que te quitará el hipo. Por la tarde, llegarás a tu cabaña de madera.", image: "https://images.unsplash.com/photo-1499185449231-16c434c7488a?q=80&w=2070&auto=format&fit=crop", links: { flights: "#", accommodation: "#", car: "#" } }, { day: 2, title: "Tocar el Cielo (Literalmente)", desc: "Hoy toca madrugar para coger el primer tren cremallera a Jungfraujoch, el 'Top of Europe'. Las vistas son tan bestias que se te olvidará hacer fotos.", image: "https://images.unsplash.com/photo-1604928192301-432f054e7d43?q=80&w=2070&auto=format&fit=crop", links: { experience: "#" } } ], extras: { destinationName: "Grindelwald", otherTrips: [ { name: "Lagos y Volcanes en Islandia", image: "https://images.unsplash.com/photo-1517621439222-d8123840332c?q=80&w=2070&auto=format&fit=crop" }, { name: "Trekking en la Patagonia", image: "https://images.unsplash.com/photo-1548777123-e216952458a2?q=80&w=2070&auto=format&fit=crop" } ] } }; } else { tripData = { title: 'Retiro "Agua Salada y Mente en Blanco" en Formentera.', image: `url('https://images.unsplash.com/photo-1551918120-9739cb430c6d?q=80&w=1974&auto=format&fit=crop')`, greeting: `¡Alerta, ${userName}! Tu alma pedía a gritos esto.`, contract: `Nuestra IA ha analizado tus deseos y ha decidido recetarte una dosis masiva de **Mar y Costa** con extra de **Paz y Calma**.`, itinerary: [ { day: 1, title: "Bienvenido a la Isla Lenta", desc: "Aterriza en Ibiza, coge el ferry y siente cómo el ritmo del mundo se ralentiza al llegar a Formentera. Tu hotel boutique te espera.", image: "https://images.unsplash.com/photo-1614001211196-160b3a32e2cf?q=80&w=1974&auto=format&fit=crop", links: { flights: "#", accommodation: "#", ferry: "#" } }, { day: 2, title: "Operación 'Croqueta' en Ses Illetes", desc: "Hoy el plan es no tener plan. Alquila una bici o una scooter y piérdete por caminos de tierra hasta llegar a la playa de Ses Illetes. El agua es tan transparente que parece de mentira.", image: "https://images.unsplash.com/photo-1507525428034-b723a996f329?q=80&w=2070&auto=format&fit=crop", links: { rental: "#" } } ], extras: { destinationName: "Formentera", otherTrips: [ { name: "Calas Secretas en Cerdeña", image: "https://images.unsplash.com/photo-1559197395-5a557d472264?q=80&w=2070&auto=format&fit=crop" }, { name: "Atardeceres en las Cícladas", image: "https://images.unsplash.com/photo-1450133064434-79941125211c?q=80&w=2070&auto=format&fit=crop" } ] } }; } document.getElementById('paradise-reveal').style.backgroundImage = `linear-gradient(to top, rgba(0,0,0,0.7), transparent), ${tripData.image}`; document.getElementById('paradise-title').innerText = tripData.title; document.getElementById('paradise-greeting').innerText = tripData.greeting; document.getElementById('paradise-contract').innerHTML = tripData.contract; const itineraryContainer = document.getElementById('paradise-itinerary'); itineraryContainer.innerHTML = ''; tripData.itinerary.forEach(day => { const dayCardHTML = ` <div class="bg-white rounded-xl shadow-lg overflow-hidden"> <img class="w-full h-48 object-cover" src="${day.image}" alt="Imagen del día ${day.day}"> <div class="p-6"> <h4 class="text-xl font-semibold">Día ${day.day}: ${day.title}</h4> <p class="mt-2 text-gray-600">${day.desc}</p> <button class="mt-4 bg-serena-mango text-serena-blue font-semibold py-2 px-4 rounded-full cta-button" onclick="toggleToolbox('toolbox-${day.day}')">Organizar este día</button> <div id="toolbox-${day.day}" class="toolbox mt-4 pt-4 border-t border-gray-200"> <p class="font-semibold mb-2">Tu Panel de Reservas:</p> <div class="flex flex-wrap gap-2"> ${day.links.flights ? `<a href="${day.links.flights}" target="_blank" class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">✈️ Vuelos</a>` : ''} ${day.links.accommodation ? `<a href="${day.links.accommodation}" target="_blank" class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">🏡 Alojamiento</a>` : ''} ${day.links.car ? `<a href="${day.links.car}" target="_blank" class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">🚗 Coche</a>` : ''} ${day.links.ferry ? `<a href="${day.links.ferry}" target="_blank" class="bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm">⛴️ Ferry</a>` : ''} ${day.links.rental ? `<a href="${day.links.rental}" target="_blank" class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm">🛵 Alquiler</a>` : ''} ${day.links.experience ? `<a href="${day.links.experience}" target="_blank" class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">🌟 Experiencia</a>` : ''} </div> </div> </div> </div>`; itineraryContainer.innerHTML += dayCardHTML; }); const extrasContainer = document.getElementById('paradise-extras'); extrasContainer.innerHTML = `<a href="#" target="_blank" class="h-40 rounded-xl bg-cover bg-center flex items-end p-3 text-white relative overflow-hidden group"><div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-300"></div><span class="font-semibold z-10 relative">Qué hacer en ${tripData.extras.destinationName}</span></a>`; tripData.extras.otherTrips.forEach(trip => { extrasContainer.innerHTML += `<div class="h-40 rounded-xl bg-cover bg-center flex items-end p-3 text-white relative overflow-hidden group"><div class="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-300"></div><div style="background-image: url('${trip.image}')" class="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-300"></div><span class="font-semibold z-10 relative">${trip.name}</span></div>`; }); showScreen('screen-paradise'); } else { showScreen('screen-q1'); } }
+        function toggleToolbox(toolboxId) { const toolbox = document.getElementById(toolboxId); if (toolbox.style.maxHeight) { toolbox.style.maxHeight = null; } else { toolbox.style.maxHeight = toolbox.scrollHeight + "px"; } }
+        function skipFilters() { saveAnswer('q5_location', 'any'); saveAnswer('q5_price', 'any'); showScreen('screen-q6'); }
+
+        async function initiateCheckout() {
+            const user = auth.currentUser;
+            if (!user) {
+                document.getElementById('payment-error').textContent = "Ups, necesitas iniciar sesión primero.";
+                return;
+            }
+
+            document.getElementById('payment-button').textContent = 'Procesando...';
+            document.getElementById('payment-button').disabled = true;
+
+            try {
+                const response = await fetch(`${window.location.origin}/.netlify/functions/createCheckoutSession`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        priceId: selectedPriceId,
+                        successUrl: window.location.href,
+                        cancelUrl: window.location.href,
+                        userId: user.uid,
+                        userEmail: user.email
+                    }),
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Error en la respuesta del servidor');
+                }
+
+                const { sessionId } = await response.json();
+
+                const { error: stripeError } = await stripe.redirectToCheckout({ sessionId });
+
+                if (stripeError) { throw new Error(stripeError.message); }
+
+            } catch (error) {
+                console.error("Error al iniciar checkout:", error);
+                document.getElementById('payment-error').textContent = "Algo salió mal. Por favor, refresca la página e inténtalo de nuevo.";
+                document.getElementById('payment-button').textContent = 'Desbloquear mis viajes';
+                document.getElementById('payment-button').disabled = false;
+            }
+        }
+
+        async function redirectToCustomerPortal() {
+            const user = auth.currentUser;
+            if (!user) { return; }
+            
+            try {
+                const response = await fetch(`${window.location.origin}/.netlify/functions/createPortalSession`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        returnUrl: window.location.href,
+                        userId: user.uid
+                    }),
+                });
+                const { url, error } = await response.json();
+                if (error) { throw new Error(error); }
+                window.location.href = url;
+            } catch (error) {
+                console.error("Error al crear el portal de cliente:", error);
+                alert("No pudimos abrir el portal de gestión. Inténtalo de nuevo más tarde.");
+            }
+        }
+        
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                onSnapshot(doc(db, "userProfiles", user.uid), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const userData = docSnap.data();
+                        const subStatus = userData.subscriptionStatus;
+                        const subEndDate = userData.subscriptionEndDate?.toDate();
+                        const currentScreenId = document.querySelector('.screen.active')?.id;
+
+                        if (subStatus === 'active' && subEndDate && subEndDate > new Date()) {
+                            if (currentScreenId !== 'screen-paradise' && currentScreenId !== 'screen-account') {
+                                buildAndShowParadisePage();
+                            }
+                        } else {
+                           if (currentScreenId !== 'screen-payment') {
+                               showScreen('screen-payment');
+                           }
+                        }
+                    } else {
+                        saveAnswersToFirestore(user.uid);
+                        showScreen('screen-payment');
+                    }
+                });
+            } else {
+                showScreen('screen-welcome');
+            }
+        });
+
+        async function buildAndShowAccountPage() {
+            const user = auth.currentUser;
+            if (!user) { showScreen('screen-auth'); return; }
+            const docRef = doc(db, "userProfiles", user.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const userData = docSnap.data();
+                document.getElementById('account-email').textContent = user.email;
+                document.getElementById('account-plan').textContent = userData.planName || 'No disponible';
+                
+                const status = userData.subscriptionStatus;
+                const endDate = userData.subscriptionEndDate?.toDate();
+
+                if (status === 'active' && endDate > new Date()) {
+                    document.getElementById('account-status').textContent = 'Activa';
+                    document.getElementById('account-status').classList.add('text-green-600');
+                    document.getElementById('account-status').classList.remove('text-red-600');
+                    document.getElementById('account-renewal').textContent = endDate.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+                } else {
+                    document.getElementById('account-status').textContent = 'Inactiva';
+                    document.getElementById('account-status').classList.add('text-red-600');
+                    document.getElementById('account-status').classList.remove('green-red-600');
+                    document.getElementById('account-renewal').textContent = '---';
+                }
+                showScreen('screen-account');
+            }
+        }
+        
+        function handlePlanSelect(selectedElement, priceId) {
+            selectedPriceId = priceId;
+            document.querySelectorAll('.payment-plan-options').forEach(opt => {
+                opt.classList.remove('option-selected', 'border-serena-mango');
+                opt.classList.add('border-serena-gray');
+            });
+            selectedElement.classList.add('option-selected', 'border-serena-mango');
+            selectedElement.classList.remove('border-serena-gray');
+        }
+
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+            } catch (error) {
+                console.error("Error al cerrar sesión:", error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('payment-button').addEventListener('click', initiateCheckout);
+            document.getElementById('logout-btn').addEventListener('click', handleLogout);
+            document.getElementById('manage-subscription-btn').addEventListener('click', redirectToCustomerPortal);
+            document.getElementById('account-btn-paradise').addEventListener('click', buildAndShowAccountPage);
+            document.getElementById('back-to-paradise-btn').addEventListener('click', () => showScreen('screen-paradise'));
+
+            document.getElementById('annual-plan-btn').addEventListener('click', () => handlePlanSelect(document.getElementById('annual-plan-btn'), annualPriceId));
+            document.getElementById('monthly-plan-btn').addEventListener('click', () => handlePlanSelect(document.getElementById('monthly-plan-btn'), monthlyPriceId));
+            
+            document.body.addEventListener('click', event => {
+                if (event.target.id === 'auth-switch-to-signin-btn') setAuthMode('signin');
+                if (event.target.id === 'auth-switch-to-signup-btn') setAuthMode('signup');
+                if (event.target.id === 'auth-error-signin-link') setAuthMode('signin');
+            });
+        });
+        
+        // Make essential functions globally available for older onclick attributes
+        window.showScreen = showScreen; 
+        window.startLoading = startLoading; 
+        window.handleOptionSelect = handleOptionSelect; 
+        window.setAuthMode = setAuthMode; 
+        window.handleAuthAction = handleAuthAction; 
+        window.handlePasswordReset = handlePasswordReset;
+        window.handleFilterSelect = handleFilterSelect; 
+        window.skipFilters = skipFilters; 
+        window.saveAnswer = saveAnswer; 
+        window.enableNextButton = enableNextButton; 
+        window.disableNextButton = disableNextButton;
+        window.toggleToolbox = toggleToolbox;
+        window.buildAndShowAccountPage = buildAndShowAccountPage;
+
+    </script>
+</body>
+</html>
+

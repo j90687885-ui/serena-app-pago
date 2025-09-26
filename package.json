@@ -1,0 +1,8 @@
+{
+  "name": "serena-app-netlify",
+  "version": "1.0.0",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "stripe": "^14.5.0"
+  }
+}
